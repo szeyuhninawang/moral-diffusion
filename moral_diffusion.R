@@ -70,7 +70,7 @@ try( congress <- fread('brady_congress_ddr.csv', data.table = FALSE ), silent = 
 
 if( is.null(congress) ) {
   # local read failed, get it remotely
-  congress <- fread("https://dataverse.harvard.edu/api/access/datafile/4600377", 
+  congress <- fread("https://dataverse.harvard.edu/api/access/datafile/4600378", 
                   data.table = FALSE )
   # save for future runs
   fwrite(congress, file = 'brady_congress_ddr.csv')
