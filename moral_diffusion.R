@@ -62,7 +62,19 @@ summary(pres_model)
 #### CONGRESS ####
 
 ### Data ----
-congress <- read.csv("congress_ddr.csv")
+
+# WARNING: If data are not present locally, this will download a ~88 MB file - don't run over a metered connection
+congress <- NULL
+# try to read local copy
+try( congress <- fread('brady_congress_ddr.csv', data.table = FALSE ), silent = TRUE )
+
+if( is.null(congress) ) {
+  # local read failed, get it remotely
+  congress <- fread("https://dataverse.harvard.edu/api/access/datafile/4600377", 
+                  data.table = FALSE )
+  # save for future runs
+  fwrite(congress, file = 'brady_congress_ddr.csv')
+}
 
 # Log-transform retweet count
 congress$retweet_log <- log(congress$retweet_count + 1)
@@ -74,8 +86,6 @@ congress <- congress %>%
                 Moral = Moral.txt)
 
 ###  Models ----
-
-
 ### DDR models
 
 # Set up variables
@@ -89,8 +99,6 @@ congress$Vicemc <- scale(congress$Vice, scale = FALSE)
 congress$dw_score_mc <- scale(congress$dw_score, scale = FALSE)
 congress$dwextr_rs_mc <- scale(congress$dwextr_rs, scale = FALSE)
 congress$age10mc <- scale(congress$age10, scale = FALSE)
-
-# Models
 
 # Main model
 main_model <- geeglm(retweet_log ~ followers1000mc + media + Virtuemc + Vicemc,
@@ -107,7 +115,18 @@ summary(dw_model)
 
 #### LARGER CONGRESS ####
 ### Data ----
-tweets <- fread('../Twitter/Congress Tweets/twitter_VirtueVice.csv')
+tweets <- NULL
+# WARNING: If data are not present locally, this will download a ~543 MB file - don't run over a metered connection
+# try to read local copy
+try( tweets <- fread('wang_congress_ddr.csv', data.table = FALSE ), silent = TRUE )
+
+if( is.null(tweets) ) {
+  # local read failed, get it remotely
+  tweets <- fread("https://dataverse.harvard.edu/api/access/datafile/4600376", 
+                  data.table = FALSE )
+  # save for future runs
+  fwrite(tweets, file = 'wang_congress_ddr.csv')
+}
 
 # Take means for each author on each day
 # partyd: 0 = R, 1 = D
@@ -146,7 +165,7 @@ summary(dw_model_congress_large)
 
 ### Pres ----
 
-# lm model with both instead
+# lm model
 pres_model_plot <- lm(retweet_log ~ Virtue + Vice + source + Virtue*source + Vice * source, data = pres)
 
 pres.emmeans.vice <- emmeans(pres_model_plot, c("Vice", "source"), at=list(Vice = seq(min(pres$Vice), max(pres$Vice), .01), source = c("clinton","trump")))
