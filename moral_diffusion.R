@@ -1,14 +1,14 @@
 #### PACKAGES ####
-library(here)
 library(tidyverse)
-library(gee)
-library(gdata)
-library(geepack)
 library(car)
 library(Rmisc)
 library(data.table)
 library(emmeans)
 library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(splines)
+library(vader)
 
 #### CLINTON ####
 
@@ -58,6 +58,78 @@ pres$Vicemc <- scale(pres$Vice)
 pres_model <- lm(retweet_log ~ Virtuemc + Vicemc + source +
                    Virtuemc*source + Vicemc * source, data = pres)
 summary(pres_model)
+
+#### Robustness Checks ####
+# Parse date variable
+pres$date <- as.numeric(pres$time)
+
+# Number of tweets that day by each author
+pres <- pres %>% dplyr::add_count(source, date)
+pres$n_mc <- scale(pres$n) # scale
+
+# Average morality that day
+pres <- pres %>% dplyr::group_by(date) %>% 
+  dplyr::mutate(mean_pos_morality = mean(Virtue), mean_neg_morality = mean(Vice))
+
+# Scale avg morality variables
+pres$mean_neg_morality_mc <- scale(pres$mean_neg_morality)
+pres$mean_pos_morality_mc <- scale(pres$mean_pos_morality)
+
+# Total num of tweets that day
+pres <- pres %>% dplyr::add_count(date, name = 'total_n')
+pres$total_n_mc <- scale(pres$total_n) # scale
+
+## Emotionality checks
+# VADER
+vader_pres <- vader_df(pres$text_cleaned)
+
+# Merge VADER scores w/ data
+pres_full <- merge(pres, vader_pres, by.x = "text_cleaned", by.y = "text")
+
+# Scale VADER variables
+pres_full$pos_sc <- scale(pres_full$pos)
+pres_full$neg_sc <- scale(pres_full$neg)
+
+# Run model
+pres_model_rc <- lm(retweet_log ~ Virtuemc + Vicemc + source + n_mc + mean_neg_morality_mc +
+                   mean_pos_morality_mc + total_n_mc + pos_sc + neg_sc + Virtuemc*source + Vicemc * source, 
+                 data = pres_full)
+summary(pres_model_rc)
+
+#### Separate Foundations ####
+### By-foundation analyses
+# Read in loadings
+trump_loadings <- read.table("document_dictionary_loadings_trump_allfoundations.tsv", header = TRUE)
+clinton_loadings <- read.table("document_dictionary_loadings_clinton_allfoundations.tsv", header = TRUE)
+
+# Combine with retweets
+trump_10 <- merge(trump, trump_loadings, by = "ID")
+clinton_10 <- merge(clinton, clinton_loadings, by = "ID")
+
+# Combine
+pres_10 <- combine(trump_10, clinton_10)
+
+# Rename columns
+pres_10 <- pres_10 %>%
+  dplyr::rename(LoyaltyVirtue = loyaltyVirtue_base,
+                LoyaltyVice = loyaltyVice_base,
+                AuthorityVirtue = authorityVirtue_base,
+                AuthorityVice = authorityVice_base,
+                FairnessVice = fairnessVice_base,
+                FairnessVirtue = fairnessVirtue_base,
+                CareVirtue = careVirtue_base,
+                CareVice = careVice_base,
+                PurityVirtue = sancityVirtue_base,
+                PurityVice = sancityVice_base)
+
+# Create retweet log variable
+pres_10$retweet_log <- log(pres_10$retweet_count + 1)
+
+# Model
+pres10_model <- lm(retweet_log ~ CareVirtue + CareVice + FairnessVirtue + FairnessVice + 
+                     LoyaltyVirtue + LoyaltyVice + AuthorityVirtue + AuthorityVice +
+                     PurityVirtue + PurityVice + source, data = pres_10)
+summary(pres10_model)
 
 #### CONGRESS ####
 
@@ -128,38 +200,92 @@ if( is.null(tweets) ) {
   fwrite(tweets, file = 'wang_congress_ddr.csv')
 }
 
-# Take means for each author on each day
-# partyd: 0 = R, 1 = D
-byday.author <- tweets %>% dplyr::group_by(totaldays, author) %>% dplyr::summarize(
+# Create variables for robustness checks
+
+# Number of tweets that day by each author
+tweets <- tweets %>% dplyr::add_count(author, totaldays)
+tweets$n_mc <- scale(tweets$n) # scale
+
+# Average morality that day
+tweets <- tweets %>% dplyr::group_by(totaldays) %>%
+  dplyr::mutate(mean_pos_morality = mean(Virtue), mean_neg_morality = mean(Vice))
+
+# Scale avg morality variables
+tweets$mean_neg_morality_mc <- scale(tweets$mean_neg_morality)
+tweets$mean_pos_morality_mc <- scale(tweets$mean_pos_morality)
+
+# Total num of tweets that day
+tweets <- tweets %>% dplyr::add_count(totaldays, name = 'total_n')
+tweets$total_n_mc <- scale(tweets$total_n) # scale
+
+# Read in VADER scores (these were run in Python)
+tweets_vader <- fread('congress_tweets_vader.csv')
+# Merge
+congress_full <- merge(tweets, tweets_vader, by.x = "generated_id", by.y = "id")
+
+# Scale VADER variables
+congress_full$pos_sc <- scale(congress_full$pos)
+congress_full$neg_sc <- scale(congress_full$neg)
+
+# Summarise by day and author
+byday.author <- congress_full %>% dplyr::group_by(totaldays, author) %>% dplyr::summarize(
   Virtue = mean(Virtue),
   Vice = mean(Vice),
   retweets = mean(retweets),
   followers = mean(followers),
   dw_score = mean(dim1),
-  partyd = mean(partyd)
+  partyd = mean(partyd),
+  n_mc = mean(n_mc),
+  mean_neg_morality_mc = mean(mean_neg_morality_mc),
+  mean_pos_morality_mc = mean(mean_pos_morality_mc),
+  total_n_mc = mean(total_n_mc),
+  pos_sc = mean(pos_sc),
+  neg_sc = mean(neg_sc)
 )
-
 # Create columns for analysis
 byday.author$retweet_log <- log(byday.author$retweets + 1)
-byday.author$followers1000 <- byday.author$followers/1000
-byday.author$followers1000mc <- scale(byday.author$followers1000, scale = FALSE)
-byday.author$Virtuemc <- scale(byday.author$Virtue, scale = FALSE)
-byday.author$Vicemc <- scale(byday.author$Vice, scale = FALSE)
-byday.author$dw_score_mc <- scale(byday.author$dw_score, scale = FALSE)
+byday.author$followers_sc <- scale(byday.author$followers)
+byday.author$Virtue_sc <- scale(byday.author$Virtue)
+byday.author$Vice_sc <- scale(byday.author$Vice)
+byday.author$dw_score_sc <- scale(byday.author$dw_score)
 
 byday.author <- na.omit(byday.author)
 byday.author$author <- as.factor(byday.author$author)
 
-### Models ---
+# Group mean centering
+byday.author <- byday.author %>%
+  group_by(author) %>%
+  dplyr::mutate(Virtue_gc = Virtue - mean(Virtue, na.rm=TRUE),
+                Vice_gc = Vice - mean(Vice, na.rm=TRUE),
+                Virtue_meanauthor = mean(Virtue, na.rm=TRUE),
+                Vice_meanauthor = mean(Vice, na.rm=TRUE)) %>%
+  ungroup
 
-# To get geepack to work properly, need to sort dataframe by clustering variable
-byday.author <- byday.author[order(byday.author$author),]
+#### Models ####
 
-# Geepack, interaction terms
-dw_model_congress_large <- geeglm(retweet_log ~ followers1000mc + Virtuemc + Vicemc + dw_score_mc +
-                                    Virtuemc * dw_score_mc + Vicemc * dw_score_mc, waves = byday.author$author,
-                                  id = author, data = byday.author, corstr = "exchangeable")
-summary(dw_model_congress_large)
+# Main effects only
+dw_congress_maineffects <- lmer(retweet_log ~ followers_sc + Virtue_meanauthor + Vice_meanauthor + 
+                            Virtue_gc + Vice_gc + dw_score_sc + (1|author),
+                          data = byday.author, REML=TRUE)
+summary(dw_congress_maineffects)
+
+# With interactions
+dw_congress_mlm <- lmer(retweet_log ~ followers_sc + Virtue_meanauthor + Vice_meanauthor + 
+                         Virtue_gc + Vice_gc + dw_score_sc + Virtue_gc * dw_score_sc + 
+                         Vice_gc * dw_score_sc + Virtue_meanauthor * dw_score_sc + 
+                         Vice_meanauthor * dw_score_sc + (1|author),
+                       data = byday.author, REML=TRUE)
+summary(dw_congress_mlm)
+
+#### Robustness Checks ####
+dw_congress_robustness <- lmer(retweet_log ~ bs(totaldays) + followers_sc + Virtue_meanauthor + Vice_meanauthor + 
+                                 Virtue_gc + Vice_gc + dw_score_sc +
+                                 n_mc + mean_neg_morality_mc + mean_pos_morality_mc + total_n_mc + pos_sc +
+                                 neg_sc + Virtue_gc * dw_score_sc + 
+                                 Vice_gc * dw_score_sc + Virtue_meanauthor * dw_score_sc + 
+                                 Vice_meanauthor * dw_score_sc + (1|author),
+                               data = byday.author, REML = TRUE)
+summary(dw_congress_robustness)
 
 #### PLOTS ####
 
@@ -203,7 +329,7 @@ pres_plot_virtue + geom_line(data=pres.emmeans.virtue, aes(x = Virtue, y = exp_r
   xlab("Positive Moral Language Loading") + ylab("Predicted Retweets") +
   scale_color_manual(name = "Source", values = c("blue3","red3"), labels = c("Clinton", "Trump")) 
 
-### Congress ---
+### Congress ----
 
 # YI - altered 3/22/21
 full.congress.emmeans.vice <- emmeans(dw_model_congress_large, c("Vicemc", "dw_score_mc"), 
