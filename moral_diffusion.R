@@ -296,7 +296,7 @@ pred.vice <- pred.vice %>% mutate(
 
 congress_plot_vice <- ggplot(pred.vice, aes(x = x, y = exp.rt, group = group))
 congress_plot_vice + geom_line(aes(colour=group)) + geom_ribbon(aes(ymin=exp.asymp.LCL, ymax=exp.asymp.UCL), alpha = .3) +
-  xlab("Standardized Negative Moral Language Loadings") + ylab("Predicted Retweets") +
+  xlab("Standardized Negative Language Loadings") + ylab("Predicted Retweets") +
   scale_color_manual(name = "DW-NOMINATE", values = c("blue3", "red3"), labels = c("-1SD (Liberal)", "+1SD (Conservative)")) 
 
 # virtue
@@ -309,5 +309,5 @@ pred.virtue <- pred.virtue %>% mutate(
 
 congress_plot_virtue <- ggplot(pred.virtue, aes(x = x, y = exp.rt, group = group))
 congress_plot_virtue + geom_line(aes(colour=group)) + geom_ribbon(aes(ymin=exp.asymp.LCL, ymax=exp.asymp.UCL), alpha = .3) +
-  xlab("Standardized Negative Moral Language Loadings") + ylab("Predicted Retweets") +
+  xlab("Standardized Positive Moral Language Loadings") + ylab("Predicted Retweets") +
   scale_color_manual(name = "DW-NOMINATE", values = c("blue3", "red3"), labels = c("-1SD (Liberal)", "+1SD (Conservative)")) 
