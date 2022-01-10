@@ -222,7 +222,7 @@ byday.author <- byday.author %>%
 
 # Main effects only
 dw_congress_maineffects <- lmer(retweet_log ~ followers_sc + Virtue_meanauthor + Vice_meanauthor + 
-                            Virtue_gc + Vice_gc + dw_score_sc + (1|author),
+                            Virtue_gc + Vice_gc + dw_score_sc + (Virtue_gc + Vice_gc|author),
                           data = byday.author, REML=TRUE)
 summary(dw_congress_maineffects)
 
@@ -230,24 +230,24 @@ summary(dw_congress_maineffects)
 dw_congress_mlm <- lmer(retweet_log ~ followers_sc + Virtue_meanauthor + Vice_meanauthor + 
                          Virtue_gc + Vice_gc + dw_score_sc + Virtue_gc * dw_score_sc + 
                          Vice_gc * dw_score_sc + Virtue_meanauthor * dw_score_sc + 
-                         Vice_meanauthor * dw_score_sc + (1|author),
+                         Vice_meanauthor * dw_score_sc + (Virtue_gc + Vice_gc|author),
                        data = byday.author, REML=TRUE)
 summary(dw_congress_mlm)
 
 #### Robustness Checks ####
-dw_congress_robustness <- lmer(retweet_log ~ bs(totaldays) + followers_sc + Virtue_meanauthor + Vice_meanauthor + 
+dw_congress_robustness <- lmer(retweet_log ~  followers_sc + Virtue_meanauthor + Vice_meanauthor + 
                                  Virtue_gc + Vice_gc + dw_score_sc +
                                  n_mc + mean_neg_morality_mc + mean_pos_morality_mc + total_n_mc + pos_sc +
                                  neg_sc + Virtue_gc * dw_score_sc + 
                                  Vice_gc * dw_score_sc + Virtue_meanauthor * dw_score_sc + 
-                                 Vice_meanauthor * dw_score_sc + (1|author),
+                                 Vice_meanauthor * dw_score_sc + (Vice_gc + Virtue_gc|author),
                                data = byday.author, REML = TRUE)
 summary(dw_congress_robustness)
 
 #### PLOTS ####
 
 ### Pres ----
-
+### Pres plots are not working currently
 # lm model
 pres_model_plot <- lm(retweet_log ~ Virtue + Vice + source + Virtue*source + Vice * source, data = pres)
 
