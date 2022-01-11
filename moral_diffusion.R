@@ -247,31 +247,36 @@ summary(dw_congress_robustness)
 #### PLOTS ####
 
 ### Pres ----
-### Pres plots are not working currently
 # lm model
 pres_model_plot <- lm(retweet_log ~ Virtue + Vice + source + Virtue*source + Vice * source, data = pres)
 
-pres.emmeans.vice <- emmeans(pres_model_plot, c("Vice", "source"), at=list(Vice = seq(min(pres$Vice), max(pres$Vice), .01), source = c("clinton","trump")))
+pres.emmeans.vice <- emmeans(pres_model_plot, c("Vice", "source"), 
+                            at=list(Vice = seq(min(pres$Vice), 
+                            max(pres$Vice), .01), source = c(1,0)))
 
+# Need to recode numeric source variable
 pres.emmeans.vice <- as.data.frame(pres.emmeans.vice)
+pres.emmeans.vice$source <- dplyr::recode(pres.emmeans.vice$source, `1`="Clinton", `0`="Trump")
 
 pres.emmeans.vice$exp_rt <- exp(pres.emmeans.vice$emmean)
 pres.emmeans.vice$exp.LCL <- exp(pres.emmeans.vice$upper.CL)
 pres.emmeans.vice$exp.UCL <- exp(pres.emmeans.vice$lower.CL)
 
-# Vice plot (pres) - NEW
+# Vice plot (pres)
 pres_plot_vice <- ggplot()
 pres_plot_vice + geom_line(data=pres.emmeans.vice, aes(x = Vice, y = exp_rt, colour = source)) + 
   geom_ribbon(data=pres.emmeans.vice, aes(x = Vice, y = exp_rt, group = source, ymin=exp.LCL, ymax=exp.UCL), alpha = .3) +
-  geom_point(data=pres, aes(x = Vice, y = retweet_count, colour = source), alpha = 0.2, size = 0.5) +
+  geom_point(data=pres, aes(x = Vice, y = retweet_count, colour = dplyr::recode(source, `1`="Clinton", `0`="Trump")), alpha = 0.2, size = 0.5) +
   coord_cartesian(ylim = c(0,10000)) +
   xlab("Negative Moral Language Loading") + ylab("Predicted Retweets") +
-  scale_color_manual(name = "Source", values = c("blue3","red3"), labels = c("Clinton", "Trump")) 
+  scale_color_manual(name = "Source", values = c("blue3","red3"))
 
-# Virtue plot pres (new)
-pres.emmeans.virtue <- emmeans(pres_model_plot, c("Virtue", "source"), at=list(Virtue = seq(min(pres$Virtue), max(pres$Virtue), .01), source = c("clinton","trump")))
+# Virtue plot (pres)
+pres.emmeans.virtue <- emmeans(pres_model_plot, c("Virtue", "source"), at=list(Virtue = seq(min(pres$Virtue), max(pres$Virtue), .01), source = c(1,0)))
 
+# Need to recode numeric "source" variable
 pres.emmeans.virtue <- as.data.frame(pres.emmeans.virtue)
+pres.emmeans.virtue$source <- dplyr::recode(pres.emmeans.virtue$source, `1`="Clinton", `0`="Trump")
 
 pres.emmeans.virtue$exp_rt <- exp(pres.emmeans.virtue$emmean)
 pres.emmeans.virtue$exp.LCL <- exp(pres.emmeans.virtue$upper.CL)
@@ -281,10 +286,10 @@ pres.emmeans.virtue$exp.UCL <- exp(pres.emmeans.virtue$lower.CL)
 pres_plot_virtue <- ggplot()
 pres_plot_virtue + geom_line(data=pres.emmeans.virtue, aes(x = Virtue, y = exp_rt, colour = source)) + 
   geom_ribbon(data=pres.emmeans.virtue, aes(x = Virtue, y = exp_rt, group = source, ymin=exp.LCL, ymax=exp.UCL), alpha = .3) +
-  geom_point(data=pres, aes(x = Virtue, y = retweet_count, colour = source), alpha = 0.2, size = 0.5) +
+  geom_point(data=pres, aes(x = Virtue, y = retweet_count, colour = dplyr::recode(source, `1`="Clinton", `0`="Trump")), alpha = 0.2, size = 0.5) +
   coord_cartesian(ylim = c(0,10000)) +
   xlab("Positive Moral Language Loading") + ylab("Predicted Retweets") +
-  scale_color_manual(name = "Source", values = c("blue3","red3"), labels = c("Clinton", "Trump")) 
+  scale_color_manual(name = "Source", values = c("blue3","red3")) 
 
 ### Congress ----
 pred.vice <- ggpredict(dw_congress_mlm,terms = c("Vice_gc [all]", "dw_score_sc [-1,1]"))
