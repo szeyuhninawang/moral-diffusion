@@ -188,6 +188,16 @@ congress_full$neg_sc <- scale(congress_full$neg)
 byday.author <- congress_full %>% dplyr::group_by(totaldays, author) %>% dplyr::summarize(
   Virtue = mean(Virtue),
   Vice = mean(Vice),
+  Carevirtue = mean(Carevirtue),
+  Carevice = mean(Carevice),
+  Fairnessvirtue = mean(Fairnessvirtue),
+  Fairnessvice = mean(Fairnessvice),
+  Loyaltyvirtue = mean(Loyaltyvirtue),
+  Loyaltyvice = mean(Loyaltyvice),
+  Authorityvirtue = mean(Authorityvirtue),
+  Authorityvice = mean(Authorityvice),
+  Purityvirtue = mean(Purityvirtue),
+  Purityvice = mean(Purityvice),
   retweets = mean(retweets),
   followers = mean(followers),
   dw_score = mean(dim1),
@@ -198,12 +208,12 @@ byday.author <- congress_full %>% dplyr::group_by(totaldays, author) %>% dplyr::
   total_n_mc = mean(total_n_mc),
   pos_sc = mean(pos_sc),
   neg_sc = mean(neg_sc)
-)
+  ) %>% 
+  ungroup()
+
 # Create columns for analysis
 byday.author$retweet_log <- log(byday.author$retweets + 1)
-byday.author$followers_sc <- scale(byday.author$followers)
-byday.author$Virtue_sc <- scale(byday.author$Virtue)
-byday.author$Vice_sc <- scale(byday.author$Vice)
+byday.author$followers_log <- log(byday.author$followers)
 byday.author$dw_score_sc <- scale(byday.author$dw_score)
 
 byday.author <- na.omit(byday.author)
@@ -212,37 +222,144 @@ byday.author$author <- as.factor(byday.author$author)
 # Group mean centering
 byday.author <- byday.author %>%
   group_by(author) %>%
-  dplyr::mutate(Virtue_gc = Virtue - mean(Virtue, na.rm=TRUE),
+  dplyr::mutate(
+                Virtue_gc = Virtue - mean(Virtue, na.rm=TRUE),
                 Vice_gc = Vice - mean(Vice, na.rm=TRUE),
+                
+                Carevirtue_gc = Carevirtue - mean(Carevirtue, na.rm=TRUE),
+                Carevice_gc = Carevice - mean(Carevice, na.rm=TRUE),
+                
+                Fairnessvirtue_gc = Fairnessvirtue - mean(Fairnessvirtue, na.rm=TRUE),
+                Fairnessvice_gc = Fairnessvice - mean(Fairnessvice, na.rm=TRUE),
+                
+                Loyaltyvirtue_gc = Loyaltyvirtue - mean(Loyaltyvirtue, na.rm=TRUE),
+                Loyaltyvice_gc = Loyaltyvice - mean(Loyaltyvice, na.rm=TRUE),
+                
+                Authorityvirtue_gc = Authorityvirtue - mean(Authorityvirtue, na.rm=TRUE),
+                Authorityvice_gc = Authorityvice - mean(Authorityvice, na.rm=TRUE),
+                
+                Purityvirtue_gc = Purityvirtue - mean(Purityvirtue, na.rm=TRUE),
+                Purityvice_gc = Purityvice - mean(Purityvice, na.rm=TRUE),
+                
                 Virtue_meanauthor = mean(Virtue, na.rm=TRUE),
-                Vice_meanauthor = mean(Vice, na.rm=TRUE)) %>%
-  ungroup
+                Vice_meanauthor = mean(Vice, na.rm=TRUE),
+                
+                Carevirtue_meanauthor = mean(Carevirtue, na.rm=TRUE),
+                Carevice_meanauthor = mean(Carevice, na.rm=TRUE),
+                
+                Fairnessvirtue_meanauthor = mean(Fairnessvirtue, na.rm=TRUE),
+                Fairnessvice_meanauthor = mean(Fairnessvice, na.rm=TRUE),
+                
+                Loyaltyvirtue_meanauthor = mean(Loyaltyvirtue, na.rm=TRUE),
+                Loyaltyvice_meanauthor = mean(Loyaltyvice, na.rm=TRUE),
+                
+                Authorityvirtue_meanauthor = mean(Authorityvirtue, na.rm=TRUE),
+                Authorityvice_meanauthor = mean(Authorityvice, na.rm=TRUE),
+                
+                Purityvirtue_meanauthor = mean(Purityvirtue, na.rm=TRUE),
+                Purityvice_meanauthor = mean(Purityvice, na.rm=TRUE)  
+                ) %>%
+  ungroup()
 
 #### Models ####
 
 # Main effects only
-dw_congress_maineffects <- lmer(retweet_log ~ followers_sc + Virtue_meanauthor + Vice_meanauthor + 
-                            Virtue_gc + Vice_gc + dw_score_sc + (Virtue_gc + Vice_gc|author),
-                          data = byday.author, REML=TRUE)
+dw_congress_maineffects <- lmer(retweet_log ~ followers_log + Virtue_meanauthor + Vice_meanauthor + 
+                            Virtue_gc + Vice_gc + dw_score_sc + (0 + Virtue_gc + Vice_gc|author) +
+                            (1|author),
+                            data = byday.author, REML=TRUE)
 summary(dw_congress_maineffects)
 
 # With interactions
-dw_congress_mlm <- lmer(retweet_log ~ followers_sc + Virtue_meanauthor + Vice_meanauthor + 
-                         Virtue_gc + Vice_gc + dw_score_sc + Virtue_gc * dw_score_sc + 
-                         Vice_gc * dw_score_sc + Virtue_meanauthor * dw_score_sc + 
-                         Vice_meanauthor * dw_score_sc + (Virtue_gc + Vice_gc|author),
-                       data = byday.author, REML=TRUE)
+dw_congress_mlm <- lmer(retweet_log ~ followers_log + Virtue_meanauthor + Vice_meanauthor + 
+                        Virtue_gc + Vice_gc + dw_score_sc + Virtue_gc * dw_score_sc + 
+                        Vice_gc * dw_score_sc + (0 + Virtue_gc + Vice_gc|author) +
+                        (1|author),
+                        data = byday.author, REML=TRUE)
 summary(dw_congress_mlm)
 
+# test of simple slopes
+simple_slopes(dw_congress_mlm, levels=list(dw_score_sc=c(-1, 1)))
+
+# Need to re-fit the model to get the Vice simple slope
+dw_congress_mlm <- lmer(retweet_log ~ followers_log + Virtue_meanauthor + Vice_meanauthor + 
+                          Virtue_gc + Vice_gc + dw_score_sc + Vice_gc * dw_score_sc + 
+                          Virtue_gc * dw_score_sc + (0 + Virtue_gc + Vice_gc|author) +
+                          (1|author),
+                        data = byday.author, REML=TRUE)
+
+# test of Vice simple slopes
+simple_slopes(dw_congress_mlm, levels=list(dw_score_sc=c(-1, 1)))
+
 #### Robustness Checks ####
-dw_congress_robustness <- lmer(retweet_log ~  followers_sc + Virtue_meanauthor + Vice_meanauthor + 
+dw_congress_robustness <- lmer(retweet_log ~ followers_log + Virtue_meanauthor + Vice_meanauthor + 
                                  Virtue_gc + Vice_gc + dw_score_sc +
                                  n_mc + mean_neg_morality_mc + mean_pos_morality_mc + total_n_mc + pos_sc +
                                  neg_sc + Virtue_gc * dw_score_sc + 
-                                 Vice_gc * dw_score_sc + Virtue_meanauthor * dw_score_sc + 
-                                 Vice_meanauthor * dw_score_sc + (Vice_gc + Virtue_gc|author),
-                               data = byday.author, REML = TRUE)
+                                 Vice_gc * dw_score_sc + (Vice_gc + Virtue_gc|author),
+                                 data = byday.author, REML = TRUE)
 summary(dw_congress_robustness)
+
+#### Separate Models per Foundation ####
+# Care
+dw_congress_care <- lmer(retweet_log ~ followers_log + 
+                           Carevirtue_meanauthor + Carevice_meanauthor +
+                           Carevirtue_gc + Carevice_gc +
+                           dw_score_sc + 
+                           Carevice_gc * dw_score_sc + Carevirtue_gc * dw_score_sc +
+                           (0 + Carevirtue_gc + Carevice_gc|author) + (1|author),
+                           data = byday.author, REML=TRUE)
+summary(dw_congress_care)
+# simple slopes
+simple_slopes(dw_congress_care, levels=list(dw_score_sc=c(-1, 1)))
+
+# Fairness
+dw_congress_fairness <- lmer(retweet_log ~ followers_log + 
+                           Fairnessvirtue_meanauthor + Fairnessvice_meanauthor +
+                           Fairnessvirtue_gc + Fairnessvice_gc +
+                           dw_score_sc + 
+                           Fairnessvice_gc * dw_score_sc + Fairnessvirtue_gc * dw_score_sc +
+                           (0 + Fairnessvirtue_gc + Fairnessvice_gc|author) + (1|author),
+                         data = byday.author, REML=TRUE)
+summary(dw_congress_fairness)
+# simple slopes
+simple_slopes(dw_congress_fairness, levels=list(dw_score_sc=c(-1, 1)))
+
+# Loyalty
+dw_congress_loyalty <- lmer(retweet_log ~ followers_log + 
+                           Loyaltyvirtue_meanauthor + Loyaltyvice_meanauthor +
+                           Loyaltyvirtue_gc + Loyaltyvice_gc +
+                           dw_score_sc + 
+                           Loyaltyvice_gc * dw_score_sc + Loyaltyvirtue_gc * dw_score_sc + 
+                           (0 + Loyaltyvirtue_gc + Loyaltyvice_gc|author) + (1|author),
+                           data = byday.author, REML=TRUE)
+summary(dw_congress_loyalty)
+# simple slopes
+simple_slopes(dw_congress_loyalty, levels=list(dw_score_sc=c(-1, 1)))
+
+# Authority
+dw_congress_authority <- lmer(retweet_log ~ followers_log + 
+                           Authorityvirtue_meanauthor + Authorityvice_meanauthor +
+                           Authorityvirtue_gc + Authorityvice_gc +
+                           dw_score_sc + 
+                           Authorityvice_gc * dw_score_sc + Authorityvirtue_gc * dw_score_sc + 
+                           (0 + Authorityvirtue_gc + Authorityvice_gc|author) + (1|author),
+                           data = byday.author, REML=TRUE)
+summary(dw_congress_authority)
+# simple slopes
+simple_slopes(dw_congress_authority, levels=list(dw_score_sc=c(-1, 1)))
+
+# Purity
+dw_congress_purity <- lmer(retweet_log ~ followers_log + 
+                           Purityvirtue_meanauthor + Purityvice_meanauthor +
+                           Purityvirtue_gc + Purityvice_gc +
+                           dw_score_sc + 
+                           Purityvice_gc * dw_score_sc +Purityvirtue_gc * dw_score_sc +
+                           (0 + Purityvirtue_gc + Purityvice_gc|author) + (1|author),
+                           data = byday.author, REML=TRUE)
+summary(dw_congress_purity)
+# simple slopes
+simple_slopes(dw_congress_purity, levels=list(dw_score_sc=c(-1, 1)))
 
 #### PLOTS ####
 
