@@ -17,7 +17,7 @@ library(vader)
 clinton <- read.csv("clinton_ddr.csv")
 
 # Log-transform retweet count
-clinton$retweet_log <- log(clinton$retweet_count + 1)
+clinton$retweet_log <- log(clinton$retweet_count)
 
 # Rename columns
 clinton <- clinton %>%
@@ -35,7 +35,7 @@ summary(clinton_model)
 trump <- read.csv("trump_ddr.csv")
 
 # Log-transform retweet count
-trump$retweet_log <- log(trump$retweet_count + 1)
+trump$retweet_log <- log(trump$retweet_count)
 
 # Rename columns
 trump <- trump %>%
