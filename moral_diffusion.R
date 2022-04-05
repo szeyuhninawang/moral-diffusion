@@ -403,7 +403,7 @@ congress_plot_virtue + geom_line(aes(colour=group)) + geom_ribbon(aes(ymin=exp.a
 # Correlations between moral loadings & pos/neg sentiment scores #
 # In presidential candidate data
 pres_merged <- merge(pres_full, pres_10, by=c("ID", "source"))
-cor_vars <- c("Virtue.x", "Vice.x", "pos", "neg", "CareVirtue", "CareVice", "FairnessVirtue", "FairnessVice", "AuthorityVirtue",
+cor_vars <- c("Virtue", "Vice", "pos", "neg", "CareVirtue", "CareVice", "FairnessVirtue", "FairnessVice", "AuthorityVirtue",
               "AuthorityVice", "LoyaltyVirtue", "LoyaltyVice", "PurityVirtue", "PurityVice")
 pres_cor <- select(pres_merged, cor_vars)
 pres_cor_table <- cor(pres_cor)
