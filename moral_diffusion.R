@@ -1,12 +1,15 @@
 #### PACKAGES ####
-library(tidyverse)
-library(data.table)
-library(lme4)
-library(lmerTest)
-library(reghelper)
-library(emmeans)
-library(ggeffects)
-library(vader)
+# list of required packages (these need to be installed, or the next line will fail)
+packages = c("tidyverse", "data.table", "lme4", "lmerTest", "reghelper", "emmeans", "ggeffects", "vader")
+
+# Default: load with library()
+invisible( lapply(packages, library, character.only = TRUE) )
+
+# This script was tested with R X.XX and all packages current as of 2022-04-01. If it is producing an error in the future,
+# this may be because packages have changed and broken compatibility. In order to fix this, install the "groundhog" package. 
+# Then, uncomment and run the following lines to load the correct package versions.
+# library(groundhog)
+# groundhog.library(packages, '2022-04-01')
 
 #### CLINTON/TRUMP ####
 
