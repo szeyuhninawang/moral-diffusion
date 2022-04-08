@@ -5,7 +5,7 @@ packages = c("tidyverse", "data.table", "lme4", "lmerTest", "reghelper", "emmean
 # Default: load with library()
 invisible( lapply(packages, library, character.only = TRUE) )
 
-# This script was tested with R X.XX and all packages current as of 2022-04-01. If it is producing an error in the future,
+# This script was tested with R 4.1.2 and all packages current as of 2022-04-01. If it is producing an error in the future,
 # this may be because packages have changed and broken compatibility. In order to fix this, install the "groundhog" package. 
 # Then, uncomment and run the following lines to load the correct package versions.
 # library(groundhog)
